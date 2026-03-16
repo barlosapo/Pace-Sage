@@ -1,3 +1,5 @@
+Built with the assistance of [Claude](https://claude.ai) by Anthropic :)
+
 # pace-sage 🏃
 
 > Marathon training plan generator & run analytics — VDOT-based pace zones, periodized plans, and a browser dashboard. Zero dependencies.
