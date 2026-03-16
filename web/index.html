@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pace-sage — marathon training intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0f0e;
+      --surface:  #141715;
+      --border:   #232624;
+      --muted:    #3a3e3b;
+      --text:     #d8dbd9;
+      --subtle:   #7a7e7c;
+      --accent:   #b5f25a;
+      --accent2:  #5af2b5;
+      --accent3:  #f2b55a;
+      --danger:   #f25a5a;
+      --easy-c:   #5af2b5;
+      --mp-c:     #b5f25a;
+      --thresh-c: #f2e05a;
+      --int-c:    #f2a35a;
+      --rep-c:    #f25a5a;
+      --font-sans: 'Fraunces', Georgia, serif;
+      --font-mono: 'DM Mono', 'Courier New', monospace;
+      --r: 4px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── LAYOUT ── */
+    .shell {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: 56px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: .12em;
+      color: var(--accent);
+    }
+    .logo span { color: var(--subtle); }
+    .topbar-meta {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--subtle);
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      background: var(--surface);
+    }
+    .nav-section {
+      padding: 0 16px;
+      margin-bottom: 6px;
+    }
+    .nav-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: .18em;
+      color: var(--subtle);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding: 0 8px;
+    }
+    .nav-item {
+      display: block;
+      padding: 7px 10px;
+      border-radius: var(--r);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: var(--muted); }
+    .nav-item.active { background: var(--border); color: var(--accent); }
+    .nav-sep { height: 1px; background: var(--border); margin: 12px 16px; }
+
+    /* ── MAIN ── */
+    .main {
+      overflow-y: auto;
+      padding: 32px 40px;
+    }
+
+    /* ── PANELS ── */
+    .panel { display: none; }
+    .panel.visible { display: block; }
+
+    /* ── TYPOGRAPHY ── */
+    h1 {
+      font-family: var(--font-sans);
+      font-size: 26px;
+      font-weight: 300;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    h1 em { font-style: italic; color: var(--accent); }
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--subtle);
+      margin-bottom: 28px;
+      letter-spacing: .06em;
+    }
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    /* ── CARDS ── */
+    .cards {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .cards-3 { grid-template-columns: repeat(3, 1fr); }
+    .cards-2 { grid-template-columns: repeat(2, 1fr); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+    }
+    .card-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .14em;
+      color: var(--subtle);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .card-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--subtle);
+      margin-top: 4px;
+    }
+
+    /* ── FORMS ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .field label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--subtle);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field select option { background: var(--surface); }
+
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      padding: 9px 20px;
+      border-radius: var(--r);
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: var(--accent); color: var(--bg); font-weight: 500; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn:hover { opacity: .88; }
+
+    /* ── PACE ZONE TABLE ── */
+    .zone-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .zone-table th {
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--subtle);
+      text-transform: uppercase;
+      padding: 0 10px 10px;
+    }
+    .zone-table td {
+      padding: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .zone-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .zone-bar-wrap {
+      background: var(--border);
+      border-radius: 2px;
+      height: 4px;
+      width: 120px;
+    }
+    .zone-bar {
+      height: 4px;
+      border-radius: 2px;
+      transition: width .6s ease;
+    }
+
+    /* ── WEEKLY CHART ── */
+    .chart-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      margin-top: 12px;
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar-rect {
+      width: 100%;
+      border-radius: 2px 2px 0 0;
+      min-height: 2px;
+      transition: height .5s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .bar-rect:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--muted);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .bar-lbl {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--subtle);
+      text-align: center;
+    }
+
+    /* ── RUN LOG TABLE ── */
+    .run-table-wrap {
+      overflow-x: auto;
+    }
+    .run-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .run-table th {
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: .14em;
+      color: var(--subtle);
+      text-transform: uppercase;
+      padding: 0 12px 10px;
+    }
+    .run-table td {
+      padding: 9px 12px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+    }
+    .run-table tr:hover td { background: var(--surface); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .badge-easy      { background: #1a3329; color: var(--easy-c); }
+    .badge-long      { background: #203315; color: var(--mp-c); }
+    .badge-threshold { background: #332e10; color: var(--thresh-c); }
+    .badge-interval  { background: #33220f; color: var(--int-c); }
+    .badge-race      { background: #331515; color: var(--rep-c); }
+    .badge-recovery  { background: #1e2020; color: var(--subtle); }
+
+    /* ── PLAN ── */
+    .week-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .week-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s;
+    }
+    .week-header:hover { background: var(--border); }
+    .week-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--subtle);
+      width: 40px;
+    }
+    .week-phase {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 99px;
+    }
+    .phase-base    { background: #1a2933; color: #5ab8f2; }
+    .phase-build   { background: #1e3319; color: var(--mp-c); }
+    .phase-peak    { background: #33260f; color: var(--accent3); }
+    .phase-taper   { background: #2b1a33; color: #c45af2; }
+    .week-miles {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .week-chevron {
+      font-size: 10px;
+      color: var(--subtle);
+      transition: transform .2s;
+    }
+    .week-card.open .week-chevron { transform: rotate(90deg); }
+    .week-days { display: none; padding: 0 16px 12px; }
+    .week-card.open .week-days { display: block; }
+    .day-row {
+      display: grid;
+      grid-template-columns: 96px 60px 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .day-row:last-child { border-bottom: none; }
+    .day-name { color: var(--subtle); }
+    .day-miles { color: var(--text); }
+    .day-desc { color: var(--text); font-size: 11px; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--subtle);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px 18px;
+      border-radius: var(--r);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 20px; }
+      .cards-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">pace<span>—</span>sage</div>
+    <div class="topbar-meta" id="topbar-date"></div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <button class="nav-item active" onclick="nav('dashboard')">📊 Dashboard</button>
+      <button class="nav-item" onclick="nav('log')">📋 Run Log</button>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-section">
+      <div class="nav-label">Tools</div>
+      <button class="nav-item" onclick="nav('zones')">⚡ Pace Zones</button>
+      <button class="nav-item" onclick="nav('plan')">🗓 Training Plan</button>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-section">
+      <div class="nav-label">Data</div>
+      <button class="nav-item" onclick="exportData()">↓ Export JSON</button>
+      <button class="nav-item" onclick="clearData()">✕ Clear All</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="panel-dashboard" class="panel visible">
+      <h1>Your <em>training</em> at a glance</h1>
+      <p class="subtitle">SUMMARY · ALL TIME</p>
+
+      <div class="cards cards-3" id="dash-cards">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="chart-area">
+        <h2>Weekly Mileage</h2>
+        <div class="chart-bars" id="weekly-chart"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card">
+          <div class="card-label">Recent Runs</div>
+          <div id="dash-recent"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Pace by Type</div>
+          <div id="dash-paces"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RUN LOG -->
+    <div id="panel-log" class="panel">
+      <h1>Run <em>Log</em></h1>
+      <p class="subtitle">RECORD · REVIEW · REFLECT</p>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-grid">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="log-date" />
+          </div>
+          <div class="field">
+            <label>Distance (miles)</label>
+            <input type="number" id="log-miles" step="0.1" min="0.1" placeholder="6.2" />
+          </div>
+          <div class="field">
+            <label>Duration (H:MM:SS)</label>
+            <input type="text" id="log-time" placeholder="0:48:00" />
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select id="log-type">
+              <option value="easy">Easy</option>
+              <option value="long">Long</option>
+              <option value="threshold">Threshold</option>
+              <option value="interval">Interval</option>
+              <option value="race">Race</option>
+              <option value="recovery">Recovery</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Avg HR (bpm)</label>
+            <input type="number" id="log-hr" placeholder="148" />
+          </div>
+          <div class="field">
+            <label>Notes</label>
+            <input type="text" id="log-notes" placeholder="Felt strong on hills" />
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addRun()">+ Log Run</button>
+      </div>
+
+      <div class="run-table-wrap">
+        <table class="run-table" id="run-table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Miles</th><th>Time</th><th>Pace/mi</th><th>Type</th><th>HR</th><th>Notes</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="run-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PACE ZONES -->
+    <div id="panel-zones" class="panel">
+      <h1>Pace <em>Zones</em></h1>
+      <p class="subtitle">VDOT · JACK DANIELS MODEL</p>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-grid">
+          <div class="field">
+            <label>Recent Race Distance</label>
+            <select id="z-dist">
+              <option value="5k">5K (3.11 mi)</option>
+              <option value="10k">10K (6.21 mi)</option>
+              <option value="half" selected>Half Marathon</option>
+              <option value="marathon">Marathon</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Finish Time (H:MM:SS)</label>
+            <input type="text" id="z-time" placeholder="1:28:30" />
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calcZones()">Calculate Zones</button>
+      </div>
+
+      <div id="zones-result" style="display:none;">
+        <div class="cards cards-3" id="zones-cards"></div>
+        <div class="card">
+          <h2>Training Zones</h2>
+          <table class="zone-table">
+            <thead>
+              <tr><th>Zone</th><th>Pace / mile</th><th>Pace / km</th><th>Effort</th></tr>
+            </thead>
+            <tbody id="zones-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRAINING PLAN -->
+    <div id="panel-plan" class="panel">
+      <h1>Training <em>Plan</em></h1>
+      <p class="subtitle">PERIODIZED · VDOT-BASED</p>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-grid">
+          <div class="field">
+            <label>Athlete Name</label>
+            <input type="text" id="p-name" placeholder="Your Name" />
+          </div>
+          <div class="field">
+            <label>Race Date</label>
+            <input type="date" id="p-racedate" />
+          </div>
+          <div class="field">
+            <label>Recent Race Distance</label>
+            <select id="p-dist">
+              <option value="5k">5K</option>
+              <option value="10k">10K</option>
+              <option value="half" selected>Half Marathon</option>
+              <option value="marathon">Marathon</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Finish Time (H:MM:SS)</label>
+            <input type="text" id="p-time" placeholder="1:28:30" />
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="buildPlan()">Generate Plan</button>
+      </div>
+
+      <div id="plan-result" style="display:none;">
+        <div class="cards cards-3" id="plan-cards" style="margin-bottom:20px;"></div>
+        <div id="plan-weeks"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ────────────────────────────────────────────────────────────────────────────
+// CONSTANTS & STORAGE
+// ────────────────────────────────────────────────────────────────────────────
+
+const RACES = { '5k': 3.10686, '10k': 6.21371, 'half': 13.1094, 'marathon': 26.2188 };
+
+const ZONES_META = [
+  { key: 'easy_lo',    label: 'Easy (lo)',     color: '#5af2b5', factor: 0.76 },
+  { key: 'easy_hi',   label: 'Easy (hi)',     color: '#5af2b5', factor: 0.79 },
+  { key: 'marathon',  label: 'Marathon',      color: '#b5f25a', factor: 0.84 },
+  { key: 'threshold', label: 'Threshold',     color: '#f2e05a', factor: 0.88 },
+  { key: 'interval',  label: 'Interval',      color: '#f2a35a', factor: 0.98 },
+  { key: 'repetition',label: 'Repetition',    color: '#f25a5a', factor: 1.05 },
+];
+
+const WEEK_TEMPLATES = {
+  base: [
+    {day:'Monday',   type:'rest',      miles:0,   desc:'Full rest or cross-train'},
+    {day:'Tuesday',  type:'easy',      miles:5,   desc:'Easy aerobic run'},
+    {day:'Wednesday',type:'easy',      miles:6,   desc:'Easy aerobic run'},
+    {day:'Thursday', type:'threshold', miles:5,   desc:'Tempo run (20–25 min @ threshold)'},
+    {day:'Friday',   type:'easy',      miles:4,   desc:'Easy recovery run'},
+    {day:'Saturday', type:'long',      miles:12,  desc:'Long easy run'},
+    {day:'Sunday',   type:'easy',      miles:4,   desc:'Easy recovery run'},
+  ],
+  build: [
+    {day:'Monday',   type:'rest',      miles:0,   desc:'Full rest'},
+    {day:'Tuesday',  type:'interval',  miles:7,   desc:'Track intervals (6×800m @ interval pace)'},
+    {day:'Wednesday',type:'easy',      miles:7,   desc:'Easy aerobic run'},
+    {day:'Thursday', type:'threshold', miles:7,   desc:'Tempo run (30–35 min @ threshold)'},
+    {day:'Friday',   type:'easy',      miles:5,   desc:'Easy recovery run'},
+    {day:'Saturday', type:'long',      miles:16,  desc:'Long run with last 4mi @ marathon pace'},
+    {day:'Sunday',   type:'easy',      miles:5,   desc:'Easy recovery run'},
+  ],
+  peak: [
+    {day:'Monday',   type:'rest',      miles:0,   desc:'Full rest'},
+    {day:'Tuesday',  type:'interval',  miles:9,   desc:'Track intervals (5×1mile @ interval pace)'},
+    {day:'Wednesday',type:'easy',      miles:8,   desc:'Easy aerobic run'},
+    {day:'Thursday', type:'threshold', miles:9,   desc:'Cruise intervals (4×2mi @ threshold)'},
+    {day:'Friday',   type:'easy',      miles:5,   desc:'Easy recovery run'},
+    {day:'Saturday', type:'long',      miles:20,  desc:'Long run — last 6mi @ marathon pace'},
+    {day:'Sunday',   type:'easy',      miles:6,   desc:'Easy recovery run'},
+  ],
+  taper: [
+    {day:'Monday',   type:'rest',      miles:0,   desc:'Rest'},
+    {day:'Tuesday',  type:'easy',      miles:5,   desc:'Easy run with 4×100m strides'},
+    {day:'Wednesday',type:'threshold', miles:5,   desc:'Short tempo: 15 min @ threshold'},
+    {day:'Thursday', type:'easy',      miles:4,   desc:'Easy shakeout'},
+    {day:'Friday',   type:'rest',      miles:0,   desc:'Rest'},
+    {day:'Saturday', type:'easy',      miles:3,   desc:'Easy 3mi, 4×strides'},
+    {day:'Sunday',   type:'race',      miles:26.2,desc:'🏁 RACE DAY'},
+  ],
+};
+
+function loadRuns() {
+  try { return JSON.parse(localStorage.getItem('pace_sage_runs') || '[]'); }
+  catch { return []; }
+}
+function saveRuns(runs) {
+  localStorage.setItem('pace_sage_runs', JSON.stringify(runs));
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// MATH
+// ────────────────────────────────────────────────────────────────────────────
+
+function parseTime(s) {
+  const parts = s.trim().split(':').map(Number);
+  if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  if (parts.length === 2) return parts[0]*60 + parts[1];
+  return NaN;
+}
+function fmtPace(spm) {
+  const m = Math.floor(spm/60), s = Math.round(spm%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function fmtHMS(sec) {
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=Math.round(sec%60);
+  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function estimateVDOT(distMiles, timeSec) {
+  const distM = distMiles * 1609.34;
+  const timeMin = timeSec / 60;
+  const v = distM / timeMin;
+  const pct = 0.8 + 0.1894393*Math.exp(-0.012778*timeMin) + 0.2989558*Math.exp(-0.1932605*timeMin);
+  const vo2 = -4.60 + 0.182258*v + 0.000104*v*v;
+  return vo2 / pct;
+}
+
+function vdotToPaceSPM(vdot, factor) {
+  const tv = factor * vdot;
+  const a=0.000104, b=0.182258, c=-(tv+4.60);
+  const vMperMin = (-b + Math.sqrt(b*b - 4*a*c)) / (2*a);
+  const vMiPerMin = vMperMin / 1609.34;
+  return 60 / vMiPerMin;
+}
+
+function calcPaceZones(vdot) {
+  const zones = {};
+  for (const z of ZONES_META) {
+    zones[z.key] = vdotToPaceSPM(vdot, z.factor);
+  }
+  return zones;
+}
+
+function predictTimes(vdot) {
+  const zones = calcPaceZones(vdot);
+  const mp = zones.marathon;
+  const DISTS = {'5K':3.10686,'10K':6.21371,'Half':13.1094,'Marathon':26.2188};
+  const out = {};
+  for (const [name, miles] of Object.entries(DISTS)) {
+    const t = mp * 26.2188 * Math.pow(miles/26.2188, 1.06);
+    out[name] = fmtHMS(t);
+  }
+  return out;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// NAVIGATION
+// ────────────────────────────────────────────────────────────────────────────
+
+function nav(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+  document.getElementById('panel-' + id).classList.add('visible');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  [...document.querySelectorAll('.nav-item')]
+    .find(b => b.getAttribute('onclick') === `nav('${id}')`)?.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'log') renderLog();
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// DASHBOARD
+// ────────────────────────────────────────────────────────────────────────────
+
+function renderDashboard() {
+  const runs = loadRuns();
+  const totalMiles = runs.reduce((s,r) => s + r.miles, 0);
+  const totalRuns = runs.length;
+  const longest = runs.length ? Math.max(...runs.map(r=>r.miles)) : 0;
+
+  // Weekly
+  const weekly = {};
+  for (const r of runs) {
+    const d = new Date(r.date + 'T12:00:00');
+    const day = d.getDay(); // 0=Sun
+    const mon = new Date(d); mon.setDate(d.getDate() - ((day+6)%7));
+    const key = mon.toISOString().slice(0,10);
+    weekly[key] = (weekly[key]||0) + r.miles;
+  }
+  const weekKeys = Object.keys(weekly).sort().slice(-12);
+  const maxW = weekKeys.length ? Math.max(...weekKeys.map(k=>weekly[k])) : 50;
+
+  // Cards
+  document.getElementById('dash-cards').innerHTML = `
+    <div class="card"><div class="card-label">Total Miles</div><div class="card-value">${totalMiles.toFixed(1)}</div><div class="card-sub">${totalRuns} runs logged</div></div>
+    <div class="card"><div class="card-label">Longest Run</div><div class="card-value">${longest.toFixed(1)}</div><div class="card-sub">miles</div></div>
+    <div class="card"><div class="card-label">This Week</div><div class="card-value">${(weekly[weekKeys[weekKeys.length-1]]||0).toFixed(1)}</div><div class="card-sub">miles</div></div>
+  `;
+
+  // Chart
+  const chart = document.getElementById('weekly-chart');
+  if (!weekKeys.length) { chart.innerHTML = '<div class="empty" style="height:100%;display:flex;align-items:center;justify-content:center;">No runs yet</div>'; }
+  else {
+    chart.innerHTML = weekKeys.map(k => {
+      const mi = weekly[k];
+      const h = Math.max(4, (mi/maxW)*110);
+      const lbl = k.slice(5);
+      return `<div class="bar-col">
+        <div class="bar-rect" style="height:${h}px;background:var(--accent);opacity:0.75;" data-tip="${mi.toFixed(1)} mi"></div>
+        <div class="bar-lbl">${lbl}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Recent
+  const recent = [...runs].reverse().slice(0,5);
+  document.getElementById('dash-recent').innerHTML = recent.length
+    ? recent.map(r => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px;">
+        <span style="color:var(--subtle)">${r.date}</span>
+        <span>${r.miles.toFixed(1)} mi</span>
+        <span style="color:var(--accent)">${fmtPace(r.duration/r.miles)}/mi</span>
+      </div>`).join('')
+    : '<div class="empty">No runs yet</div>';
+
+  // Pace by type
+  const types = ['easy','long','threshold','interval','race'];
+  const paceRows = types.map(t => {
+    const tr = runs.filter(r=>r.type===t);
+    if (!tr.length) return null;
+    const avgPace = fmtPace(tr.reduce((s,r)=>s+r.duration,0) / tr.reduce((s,r)=>s+r.miles,0));
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px;">
+      <span class="badge badge-${t}">${t}</span>
+      <span style="color:var(--accent)">${avgPace}/mi</span>
+      <span style="color:var(--subtle)">${tr.length} runs</span>
+    </div>`;
+  }).filter(Boolean);
+  document.getElementById('dash-paces').innerHTML = paceRows.length
+    ? paceRows.join('') : '<div class="empty">No runs yet</div>';
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// RUN LOG
+// ────────────────────────────────────────────────────────────────────────────
+
+function addRun() {
+  const date  = document.getElementById('log-date').value;
+  const miles = parseFloat(document.getElementById('log-miles').value);
+  const timeS = parseTime(document.getElementById('log-time').value);
+  const type  = document.getElementById('log-type').value;
+  const hr    = document.getElementById('log-hr').value;
+  const notes = document.getElementById('log-notes').value;
+
+  if (!date || isNaN(miles) || isNaN(timeS)) { toast('Please fill date, miles, and time.'); return; }
+
+  const runs = loadRuns();
+  runs.push({ id: Date.now(), date, miles, duration: timeS, type, hr: hr||null, notes });
+  saveRuns(runs);
+  renderLog();
+  renderDashboard();
+  document.getElementById('log-miles').value = '';
+  document.getElementById('log-time').value = '';
+  document.getElementById('log-notes').value = '';
+  document.getElementById('log-hr').value = '';
+  toast('Run logged ✓');
+}
+
+function deleteRun(id) {
+  const runs = loadRuns().filter(r => r.id !== id);
+  saveRuns(runs);
+  renderLog();
+  renderDashboard();
+}
+
+function renderLog() {
+  const runs = loadRuns().reverse();
+  const tbody = document.getElementById('run-tbody');
+  if (!runs.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">No runs logged yet — add your first run above.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = runs.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.miles.toFixed(2)}</td>
+      <td>${fmtHMS(r.duration)}</td>
+      <td>${fmtPace(r.duration/r.miles)}</td>
+      <td><span class="badge badge-${r.type}">${r.type}</span></td>
+      <td>${r.hr || '—'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.notes||'—'}</td>
+      <td><button class="btn btn-secondary" style="padding:3px 8px;font-size:10px;" onclick="deleteRun(${r.id})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// PACE ZONES
+// ────────────────────────────────────────────────────────────────────────────
+
+function calcZones() {
+  const dist = document.getElementById('z-dist').value;
+  const timeStr = document.getElementById('z-time').value;
+  const timeSec = parseTime(timeStr);
+  if (isNaN(timeSec) || timeSec <= 0) { toast('Enter a valid time (H:MM:SS)'); return; }
+
+  const miles = RACES[dist];
+  const vdot = estimateVDOT(miles, timeSec);
+  const zones = calcPaceZones(vdot);
+  const preds = predictTimes(vdot);
+
+  document.getElementById('zones-result').style.display = 'block';
+
+  document.getElementById('zones-cards').innerHTML = `
+    <div class="card"><div class="card-label">VDOT</div><div class="card-value">${vdot.toFixed(1)}</div><div class="card-sub">VO₂ max proxy</div></div>
+    <div class="card"><div class="card-label">Marathon Goal</div><div class="card-value" style="font-size:22px;">${preds['Marathon']}</div></div>
+    <div class="card"><div class="card-label">Half Goal</div><div class="card-value" style="font-size:22px;">${preds['Half']}</div></div>
+  `;
+
+  const mpSPM = zones.marathon;
+  document.getElementById('zones-tbody').innerHTML = ZONES_META.map(z => {
+    const spm = zones[z.key];
+    const spkm = spm / 1.60934;
+    const barPct = Math.max(10, Math.min(100, (mpSPM / spm) * 85));
+    return `<tr>
+      <td><span class="zone-dot" style="background:${z.color}"></span>${z.label}</td>
+      <td style="color:${z.color};font-weight:500">${fmtPace(spm)}</td>
+      <td style="color:var(--subtle)">${fmtPace(spkm)}</td>
+      <td>
+        <div class="zone-bar-wrap">
+          <div class="zone-bar" style="width:${barPct}%;background:${z.color}"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// TRAINING PLAN
+// ────────────────────────────────────────────────────────────────────────────
+
+function buildPlan() {
+  const name     = document.getElementById('p-name').value || 'Athlete';
+  const raceDate = document.getElementById('p-racedate').value;
+  const dist     = document.getElementById('p-dist').value;
+  const timeStr  = document.getElementById('p-time').value;
+  const timeSec  = parseTime(timeStr);
+
+  if (!raceDate || isNaN(timeSec)) { toast('Fill in race date and finish time'); return; }
+
+  const miles = RACES[dist];
+  const vdot  = estimateVDOT(miles, timeSec);
+  const zones = calcPaceZones(vdot);
+  const preds = predictTimes(vdot);
+
+  const today    = new Date();
+  const race     = new Date(raceDate + 'T12:00:00');
+  const diffDays = Math.floor((race - today) / 86400000);
+  const totalWks = Math.max(4, Math.floor(diffDays / 7));
+
+  const taperWks = 3;
+  const peakWks  = Math.min(4, Math.max(2, Math.floor(totalWks/5)));
+  const buildWks = Math.min(6, Math.max(2, Math.floor(totalWks/3)));
+  const baseWks  = totalWks - taperWks - peakWks - buildWks;
+
+  const phases = [
+    ...Array(baseWks).fill('base'),
+    ...Array(buildWks).fill('build'),
+    ...Array(peakWks).fill('peak'),
+    ...Array(taperWks).fill('taper'),
+  ];
+
+  document.getElementById('plan-result').style.display = 'block';
+  document.getElementById('plan-cards').innerHTML = `
+    <div class="card"><div class="card-label">Athlete</div><div class="card-value" style="font-size:20px;">${name}</div><div class="card-sub">VDOT ${vdot.toFixed(1)}</div></div>
+    <div class="card"><div class="card-label">Goal Time</div><div class="card-value" style="font-size:22px;">${preds['Marathon']}</div><div class="card-sub">${raceDate}</div></div>
+    <div class="card"><div class="card-label">Plan Length</div><div class="card-value">${phases.length}</div><div class="card-sub">weeks</div></div>
+  `;
+
+  // Get start Monday
+  const startMon = new Date(today);
+  startMon.setDate(today.getDate() - ((today.getDay()+6)%7));
+
+  document.getElementById('plan-weeks').innerHTML = phases.map((phase, i) => {
+    const wkStart = new Date(startMon);
+    wkStart.setDate(startMon.getDate() + i*7);
+    const wkLabel = wkStart.toISOString().slice(0,10);
+    const template = WEEK_TEMPLATES[phase];
+    const totalMi = template.reduce((s,d) => s+d.miles, 0);
+
+    const phaseBadge = {
+      base:  '<span class="week-phase phase-base">Base</span>',
+      build: '<span class="week-phase phase-build">Build</span>',
+      peak:  '<span class="week-phase phase-peak">Peak</span>',
+      taper: '<span class="week-phase phase-taper">Taper</span>',
+    }[phase];
+
+    const days = template.map(d => `
+      <div class="day-row">
+        <div class="day-name">${d.day}</div>
+        <div class="day-miles">${d.miles > 0 ? d.miles + ' mi' : 'rest'}</div>
+        <div class="day-desc">${d.desc}</div>
+      </div>
+    `).join('');
+
+    return `<div class="week-card" id="wk-${i}">
+      <div class="week-header" onclick="toggleWeek('wk-${i}')">
+        <span class="week-num">WK ${i+1}</span>
+        ${phaseBadge}
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);margin-left:8px">${wkLabel}</span>
+        <span class="week-miles">${totalMi.toFixed(0)} mi</span>
+        <span class="week-chevron">▶</span>
+      </div>
+      <div class="week-days">${days}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWeek(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// UTILITIES
+// ────────────────────────────────────────────────────────────────────────────
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function exportData() {
+  const runs = loadRuns();
+  const blob = new Blob([JSON.stringify(runs, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pace_sage_runs.json';
+  a.click();
+}
+
+function clearData() {
+  if (confirm('Clear all run data? This cannot be undone.')) {
+    localStorage.removeItem('pace_sage_runs');
+    renderDashboard();
+    renderLog();
+    toast('Data cleared.');
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  document.getElementById('topbar-date').textContent =
+    now.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('log-date').value = now.toISOString().slice(0,10);
+  renderDashboard();
+});
+</script>
+</body>
+</html>
