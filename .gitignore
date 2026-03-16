@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.venv
+env/
+venv/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Run data (personal — don't commit)
+~/.pace_sage/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Distribution
+*.tar.gz
+*.whl

@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pace-sage"
+version = "1.0.0"
+description = "Marathon training plan generator and run analytics CLI"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+keywords = ["running", "marathon", "training", "vdot", "analytics"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Utilities",
+]
+
+[project.scripts]
+pace-sage = "pace_sage.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pace_sage*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
