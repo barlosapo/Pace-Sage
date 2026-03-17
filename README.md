@@ -1,5 +1,5 @@
-Built with the assistance of [Claude](https://claude.ai) by Anthropic :)
-An attempt at going all in on the vibecode train and build something im into while focusing on other life duties
+built during my free time 
+(yes i code outside of my coding day job)
 
 # pace-sage 🏃
 
